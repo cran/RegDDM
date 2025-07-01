@@ -1,7 +1,7 @@
 #' Class of models fitted by \pkg{RegDDM}
 #'
 #' @description
-#' \code{regddmfit} is an S3 object sotring the fitted models of \pkg{RegDDM}.
+#' \code{regddmfit} is an S3 object storing the fitted models of \pkg{RegDDM}.
 #' It contains information used to fit the model and the resulting
 #' \code{\link[rstan]{stanfit}} and can be summarized and printed using
 #' \code{\link[=summary.regddmfit]{summary}} and \code{\link[=print.regddmfit]{print}}.
@@ -47,6 +47,12 @@ regddmfit <- function(data1,data2,model,family,stan_fit){
 #'
 #' @export
 summary.regddmfit = function(object, ...){
+  # For unfitted models, return NULL
+  if(is.null(object$stan_fit)){
+    warning("The RegDDM model hasn't been fit. Returning NULL.")
+    return(NULL)
+  }
+  # Otherwise, return summary statistics.
   return(summary_results(object$stan_fit, object$data1, ...))
 }
 
@@ -75,6 +81,14 @@ print.regddmfit = function(x, digits = 3, ...){
     output = paste0(output, "  ", deparse(m), "\n")
   }
   output = paste0(output, "Family: ", x$family, "\n")
+
+  # For unfitted models
+  if(is.null(x$stan_fit)){
+    output = paste0(output, "Sampling not done!")
+    cat(output)
+    return(NULL)
+  }
+
   sim = x$stan_fit@sim
   longest_time = rstan::get_elapsed_time(x$stan_fit)
   longest_time = round(max(longest_time[,1]+longest_time[,2]), 0)
@@ -83,7 +97,7 @@ print.regddmfit = function(x, digits = 3, ...){
     stringr::str_interp(
       "${sim$chains} chains, ${sim$warmup} warmups and ${sim$iter} iterations were used. "
     ),
-    stringr::str_interp("Longest elipsed time is ${longest_time} s.\n\n")
+    stringr::str_interp("Longest elapsed time is ${longest_time} s.\n\n")
   )
 
   output = paste0(output, "Regression coefficients:\n")
